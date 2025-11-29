@@ -64,7 +64,7 @@ jobs:
             scm {
               git {
                 remote {
-                  url('https://github.com/tu-usuario/dinex-tracking.git')
+                  url('https://github.com/WalterColonia03/IaC-DINEX.git')
                   credentials('github-credentials')
                 }
                 branch('*/main')
