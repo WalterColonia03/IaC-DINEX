@@ -1,0 +1,94 @@
+version: '3.8'
+
+# Stack de Observabilidad para DINEX Tracking
+# Incluye: Grafana + Prometheus + Loki + Promtail
+# Proyecto universitario individual
+
+services:
+  # GRAFANA - Dashboard de visualización
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: dinex-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - monitoring
+    restart: unless-stopped
+    labels:
+      com.dinex.description: "Grafana Dashboard para DINEX Tracking"
+
+  # PROMETHEUS - Recolección de métricas
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: dinex-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-storage:/prometheus
+    networks:
+      - monitoring
+    restart: unless-stopped
+    labels:
+      com.dinex.description: "Prometheus metrics collector"
+
+  # LOKI - Agregación de logs
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: dinex-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki-storage:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+    restart: unless-stopped
+    labels:
+      com.dinex.description: "Loki log aggregation"
+
+  # PROMTAIL - Recolector de logs
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: dinex-promtail
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - /var/log:/var/log:ro
+      - ./application/lambda:/var/log/lambda:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - monitoring
+    restart: unless-stopped
+    labels:
+      com.dinex.description: "Promtail log collector"
+
+networks:
+  monitoring:
+    driver: bridge
+    labels:
+      com.dinex.description: "Red de monitoreo DINEX"
+
+volumes:
+  grafana-storage:
+    labels:
+      com.dinex.description: "Almacenamiento persistente Grafana"
+  prometheus-storage:
+    labels:
+      com.dinex.description: "Almacenamiento persistente Prometheus"
+  loki-storage:
+    labels:
+      com.dinex.description: "Almacenamiento persistente Loki"

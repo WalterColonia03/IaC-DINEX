@@ -1,0 +1,16 @@
+# Configuración de dashboards para Grafana
+# DINEX Tracking
+
+apiVersion: 1
+
+providers:
+  - name: 'DINEX Dashboards'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true

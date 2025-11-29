@@ -92,3 +92,23 @@ credentials.json
 tmp/
 temp/
 *.tmp
+
+# DevOps Tools - Checkov results
+infrastructure/security/results/*.xml
+infrastructure/security/results/*.json
+infrastructure/security/results/*.sarif
+
+# Jenkins
+jenkins_home/
+jenkins/jenkins_home/
+
+# Docker Compose
+docker-compose.override.yml
+
+# Grafana data
+monitoring/grafana/data/
+
+# AWS Credentials (CRITICAL - NEVER COMMIT)
+.aws/
+credentials
+*.csv

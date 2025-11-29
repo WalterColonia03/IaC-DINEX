@@ -1,0 +1,193 @@
+# Makefile Extendido para DINEX Tracking con DevOps Tools
+# Proyecto universitario individual
+# Incluye: Terraform, Checkov, Grafana+Prometheus+Loki, Jenkins
+
+.PHONY: help setup check deploy monitor jenkins clean
+
+# Variables
+PROJECT = dinex-tracking
+ENV ?= dev
+TERRAFORM_DIR = infrastructure/terraform
+LAMBDA_DIR = application/lambda
+DOCKER_COMPOSE = docker-compose
+JENKINS_CONTAINER = $(PROJECT)-jenkins
+
+# Colores
+GREEN = \033[0;32m
+YELLOW = \033[1;33m
+RED = \033[0;31m
+BLUE = \033[0;34m
+NC = \033[0m
+
+help: ## Mostrar ayuda
+	@echo "$(GREEN)=========================================$(NC)"
+	@echo "$(GREEN)  DINEX Tracking - Comandos Disponibles$(NC)"
+	@echo "$(GREEN)=========================================$(NC)"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+
+# ===== SETUP =====
+setup: ## Setup inicial del proyecto
+	@echo "$(BLUE)🔧 Configurando proyecto...$(NC)"
+	@chmod +x infrastructure/security/checkov/*.sh 2>/dev/null || true
+	@chmod +x scripts/*.sh 2>/dev/null || true
+	@pip3 install --user boto3 pytest 2>/dev/null || echo "Instala Python3 y pip3"
+	@echo "$(GREEN)✅ Setup completado$(NC)"
+
+# ===== SEGURIDAD =====
+security: ## Ejecutar análisis de seguridad con Checkov
+	@echo "$(BLUE)🔍 Ejecutando análisis de seguridad...$(NC)"
+	@cd infrastructure/security/checkov && bash run-checkov.sh
+	@echo "$(GREEN)📊 Resultados: infrastructure/security/results/$(NC)"
+
+# ===== TERRAFORM =====
+tf-init: ## Inicializar Terraform
+	@echo "$(BLUE)🏗️ Inicializando Terraform...$(NC)"
+	@cd $(TERRAFORM_DIR) && terraform init
+
+tf-validate: ## Validar sintaxis de Terraform
+	@cd $(TERRAFORM_DIR) && terraform validate
+
+tf-plan: ## Generar plan de Terraform
+	@cd $(TERRAFORM_DIR) && terraform plan
+
+tf-apply: ## Aplicar cambios de Terraform
+	@cd $(TERRAFORM_DIR) && terraform apply
+
+tf-destroy: ## Destruir infraestructura
+	@echo "$(RED)⚠️ ADVERTENCIA: Esto eliminará TODA la infraestructura$(NC)"
+	@cd $(TERRAFORM_DIR) && terraform destroy
+
+# ===== LAMBDA =====
+lambda-package: ## Empaquetar funciones Lambda
+	@echo "$(BLUE)📦 Empaquetando funciones Lambda...$(NC)"
+	@cd $(LAMBDA_DIR)/tracking && powershell -Command "Compress-Archive -Path index.py -DestinationPath deployment.zip -Force"
+	@cd $(LAMBDA_DIR)/notifications && powershell -Command "Compress-Archive -Path index.py -DestinationPath deployment.zip -Force"
+	@echo "$(GREEN)✅ Funciones empaquetadas$(NC)"
+
+lambda-test: ## Ejecutar tests de Lambda
+	@echo "$(BLUE)🧪 Ejecutando tests...$(NC)"
+	@cd application && python3 -m pytest tests/ -v
+
+# ===== MONITOREO =====
+monitor-up: ## Levantar stack de monitoreo (Grafana+Prometheus+Loki)
+	@echo "$(BLUE)📊 Levantando stack de monitoreo...$(NC)"
+	@$(DOCKER_COMPOSE) up -d
+	@echo ""
+	@echo "$(GREEN)✅ Servicios de monitoreo iniciados:$(NC)"
+	@echo "  📈 Grafana:    http://localhost:3000 (admin/admin123)"
+	@echo "  📊 Prometheus: http://localhost:9090"
+	@echo "  📝 Loki:       http://localhost:3100"
+	@echo ""
+
+monitor-down: ## Detener stack de monitoreo
+	@echo "$(YELLOW)⏹️  Deteniendo monitoreo...$(NC)"
+	@$(DOCKER_COMPOSE) down
+
+monitor-logs: ## Ver logs del stack de monitoreo
+	@$(DOCKER_COMPOSE) logs -f
+
+monitor-status: ## Estado de servicios de monitoreo
+	@$(DOCKER_COMPOSE) ps
+
+monitor-restart: ## Reiniciar stack de monitoreo
+	@$(DOCKER_COMPOSE) restart
+
+# ===== JENKINS =====
+jenkins-build: ## Construir imagen de Jenkins
+	@echo "$(BLUE)🔨 Construyendo imagen de Jenkins...$(NC)"
+	@cd jenkins && docker build -t $(PROJECT)-jenkins .
+	@echo "$(GREEN)✅ Imagen Jenkins creada$(NC)"
+
+jenkins-run: ## Ejecutar Jenkins
+	@echo "$(BLUE)🚀 Iniciando Jenkins...$(NC)"
+	@docker run -d \
+		--name $(JENKINS_CONTAINER) \
+		-p 8080:8080 \
+		-p 50000:50000 \
+		-v jenkins_home:/var/jenkins_home \
+		-v //var/run/docker.sock:/var/run/docker.sock \
+		$(PROJECT)-jenkins
+	@echo ""
+	@echo "$(GREEN)✅ Jenkins disponible en: http://localhost:8080$(NC)"
+	@echo "   Usuario: admin"
+	@echo "   Password: admin123"
+	@echo ""
+
+jenkins-stop: ## Detener Jenkins
+	@echo "$(YELLOW)⏹️  Deteniendo Jenkins...$(NC)"
+	@docker stop $(JENKINS_CONTAINER) && docker rm $(JENKINS_CONTAINER)
+
+jenkins-logs: ## Ver logs de Jenkins
+	@docker logs -f $(JENKINS_CONTAINER)
+
+jenkins-restart: ## Reiniciar Jenkins
+	@docker restart $(JENKINS_CONTAINER)
+
+# ===== DEPLOYMENT =====
+deploy-all: security lambda-package tf-apply ## Pipeline completo: security + package + deploy
+	@echo "$(GREEN)🎉 Deployment completado!$(NC)"
+
+# ===== TESTING =====
+test-all: lambda-test security ## Ejecutar todos los tests
+	@echo "$(GREEN)✅ Tests completados$(NC)"
+
+# ===== COMANDOS COMPUESTOS =====
+dev-environment: monitor-up jenkins-build jenkins-run ## Setup completo de ambiente de desarrollo
+	@echo "$(GREEN)🎉 Ambiente de desarrollo listo!$(NC)"
+	@echo ""
+	@echo "Servicios disponibles:"
+	@echo "  📈 Grafana: http://localhost:3000"
+	@echo "  🔧 Jenkins: http://localhost:8080"
+	@echo ""
+
+all: setup security monitor-up jenkins-build ## Setup completo del proyecto
+	@echo "$(GREEN)🎉 Proyecto completamente configurado!$(NC)"
+
+# ===== LIMPIEZA =====
+clean: ## Limpiar archivos temporales
+	@echo "$(BLUE)🧹 Limpiando archivos temporales...$(NC)"
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@rm -f $(LAMBDA_DIR)/**/deployment.zip 2>/dev/null || true
+	@rm -f infrastructure/security/results/* 2>/dev/null || true
+	@rm -rf $(TERRAFORM_DIR)/.terraform 2>/dev/null || true
+	@echo "$(GREEN)✅ Limpieza completada$(NC)"
+
+clean-all: clean tf-destroy monitor-down jenkins-stop ## Limpiar TODO (infraestructura + servicios)
+	@echo "$(RED)⚠️ Toda la infraestructura ha sido eliminada$(NC)"
+
+# ===== INFORMACIÓN =====
+status: ## Ver estado de todos los servicios
+	@echo "$(GREEN)📊 Estado de Servicios DINEX Tracking$(NC)"
+	@echo ""
+	@echo "Docker Compose (Monitoreo):"
+	@$(DOCKER_COMPOSE) ps 2>/dev/null || echo "  No ejecutándose"
+	@echo ""
+	@echo "Jenkins:"
+	@docker ps | grep $(JENKINS_CONTAINER) || echo "  No ejecutándose"
+	@echo ""
+
+urls: ## Mostrar URLs de servicios
+	@echo "$(GREEN)🔗 URLs de Servicios$(NC)"
+	@echo ""
+	@echo "Monitoreo:"
+	@echo "  Grafana:    http://localhost:3000"
+	@echo "  Prometheus: http://localhost:9090"
+	@echo "  Loki:       http://localhost:3100"
+	@echo ""
+	@echo "CI/CD:"
+	@echo "  Jenkins:    http://localhost:8080"
+	@echo ""
+	@echo "Credentials:"
+	@echo "  Grafana: admin/admin123"
+	@echo "  Jenkins: admin/admin123"
+	@echo ""
+
+# ===== DOCUMENTACIÓN =====
+docs: ## Mostrar estructura del proyecto
+	@echo "$(GREEN)📁 Estructura del Proyecto DINEX Tracking$(NC)"
+	@echo ""
+	@tree -L 3 -I 'node_modules|__pycache__|*.pyc|.git' . 2>/dev/null || \
+		find . -maxdepth 3 -type d ! -path '*/\.*' ! -path '*/node_modules/*' ! -path '*/__pycache__/*'

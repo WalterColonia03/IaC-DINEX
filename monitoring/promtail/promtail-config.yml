@@ -1,0 +1,46 @@
+# Configuración de Promtail para DINEX Tracking
+# Recolector de logs para Loki
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Logs del sistema
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system_logs
+          environment: dev
+          __path__: /var/log/*.log
+
+  # Logs de funciones Lambda (simulados localmente)
+  - job_name: lambda_tracking
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: lambda
+          function: tracking
+          environment: dev
+          project: dinex
+          __path__: /var/log/lambda/tracking/*.log
+
+  - job_name: lambda_notifications
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: lambda
+          function: notifications
+          environment: dev
+          project: dinex
+          __path__: /var/log/lambda/notifications/*.log

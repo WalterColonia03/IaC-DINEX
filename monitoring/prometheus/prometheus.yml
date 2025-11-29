@@ -1,0 +1,57 @@
+# Configuración de Prometheus para DINEX Tracking
+# Proyecto universitario individual
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'dinex-tracking'
+    environment: 'dev'
+
+# Configuración de alertas (opcional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Archivos de reglas de alertas
+rule_files:
+  # - "alerts.yml"
+
+# Configuración de scraping
+scrape_configs:
+  # Prometheus mismo
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
+
+  # Loki
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+        labels:
+          service: 'loki'
+
+  # Métricas simuladas de Lambda (para demo local)
+  # En producción se usaría CloudWatch Exporter
+  - job_name: 'lambda_simulation'
+    static_configs:
+      - targets: []
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: '.*'
+        target_label: environment
+        replacement: 'dev'
+      - source_labels: [__name__]
+        regex: '.*'
+        target_label: project
+        replacement: 'dinex-tracking'
