@@ -5,7 +5,8 @@
       "Bash(powershell Compress-Archive:*)",
       "Bash(powershell -Command:*)",
       "Bash(terraform init:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
