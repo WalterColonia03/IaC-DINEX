@@ -1,11 +1,12 @@
 # Makefile para Proyecto Individual - Sistema de Tracking DINEX
 # Curso: Infraestructura como Código
 
-.PHONY: help init plan apply destroy package clean test logs
+.PHONY: help init plan apply destroy package clean test logs sonar-up sonar-down sonar-scan
 
 # Variables
-TF_DIR = terraform
-LAMBDA_DIR = lambda
+TF_DIR = infrastructure/terraform
+LAMBDA_DIR = application/lambda
+SRC_DIR = src
 
 help: ## Mostrar esta ayuda
 	@echo "Comandos disponibles:"
@@ -122,3 +123,25 @@ all: check package validate plan ## Ejecutar check, package, validate y plan
 
 deploy: package apply output ## Empaquetar, aplicar y mostrar outputs
 	@echo "Deployment completo"
+
+# Comandos de SonarQube
+sonar-up: ## Levantar servidor SonarQube
+	@echo "Iniciando SonarQube..."
+	docker-compose -f docker-compose.sonar.yml up -d
+	@echo "SonarQube disponible en: http://localhost:9000"
+	@echo "Usuario: admin / Password: admin (cambiar al primer login)"
+
+sonar-down: ## Detener servidor SonarQube
+	@echo "Deteniendo SonarQube..."
+	docker-compose -f docker-compose.sonar.yml down
+
+sonar-scan: ## Ejecutar análisis de código con SonarQube
+	@echo "Ejecutando análisis de SonarQube..."
+	npm run sonar
+	@echo "Ver resultados en: http://localhost:9000"
+
+sonar-logs: ## Ver logs de SonarQube
+	docker-compose -f docker-compose.sonar.yml logs -f
+
+sonar-restart: ## Reiniciar SonarQube
+	docker-compose -f docker-compose.sonar.yml restart

@@ -34,7 +34,7 @@ RUN wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAF
     && chmod +x /usr/local/bin/terraform
 
 # Instalar herramientas Python
-RUN pip3 install --no-cache-dir boto3 pytest pytest-cov
+RUN pip3 install --no-cache-dir --break-system-packages boto3 pytest pytest-cov
 
 # Volver a usuario jenkins
 USER jenkins

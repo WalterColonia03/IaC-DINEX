@@ -15,26 +15,26 @@
 
 | Componente | Estado | Detalles |
 |------------|--------|----------|
-| Funciones Lambda | ✅ Empaquetadas | tracking (4.2KB), notifications (2.0KB) |
-| Terraform Sintaxis | ✅ Validado | 593 líneas, 18 recursos, 0 errores |
-| Rutas de Archivos | ✅ Corregidas | lambda-simple → lambda |
-| Documentación | ✅ Completa | 5 documentos técnicos |
-| Proyecto Simplificado | ✅ Limpiado | Solo archivos de proyecto individual |
+| Funciones Lambda | OK - Empaquetadas | tracking (4.2KB), notifications (2.0KB) |
+| Terraform Sintaxis | OK - Validado | 593 líneas, 18 recursos, 0 errores |
+| Rutas de Archivos | OK - Corregidas | lambda-simple convertido a lambda |
+| Documentación | OK - Completa | 5 documentos técnicos |
+| Proyecto Simplificado | OK - Limpiado | Solo archivos de proyecto individual |
 
 ### Acciones Requeridas
 
 | Acción | Estado | Guía |
 |--------|--------|------|
-| Instalar Terraform | ⚠️ Pendiente | [GUIA_CONFIGURACION_AWS.md - Paso 3](GUIA_CONFIGURACION_AWS.md#paso-3-instalar-terraform) |
-| Instalar AWS CLI | ⚠️ Pendiente | [GUIA_CONFIGURACION_AWS.md - Paso 2](GUIA_CONFIGURACION_AWS.md#paso-2-configurar-aws-cli) |
-| Configurar Credenciales AWS | ⚠️ Pendiente | [GUIA_CONFIGURACION_AWS.md - Paso 4](GUIA_CONFIGURACION_AWS.md#paso-4-configurar-credenciales-aws) |
-| Personalizar terraform.tfvars | ⚠️ Pendiente | [GUIA_CONFIGURACION_AWS.md - Paso 5](GUIA_CONFIGURACION_AWS.md#paso-5-personalizar-configuración-del-proyecto) |
+| Instalar Terraform | PENDIENTE | [GUIA_CONFIGURACION_AWS.md - Paso 3](GUIA_CONFIGURACION_AWS.md#paso-3-instalar-terraform) |
+| Instalar AWS CLI | PENDIENTE | [GUIA_CONFIGURACION_AWS.md - Paso 2](GUIA_CONFIGURACION_AWS.md#paso-2-configurar-aws-cli) |
+| Configurar Credenciales AWS | PENDIENTE | [GUIA_CONFIGURACION_AWS.md - Paso 4](GUIA_CONFIGURACION_AWS.md#paso-4-configurar-credenciales-aws) |
+| Personalizar terraform.tfvars | PENDIENTE | [GUIA_CONFIGURACION_AWS.md - Paso 5](GUIA_CONFIGURACION_AWS.md#paso-5-personalizar-configuración-del-proyecto) |
 
 ### Documentación Disponible
 
 - **[README.md](README.md)** - Este archivo, documentación principal
-- **[GUIA_CONFIGURACION_AWS.md](GUIA_CONFIGURACION_AWS.md)** - Guía paso a paso para configurar AWS y desplegar (NUEVO)
-- **[ERRORES_ENCONTRADOS.md](ERRORES_ENCONTRADOS.md)** - Reporte detallado de errores encontrados y soluciones (NUEVO)
+- **[GUIA_CONFIGURACION_AWS.md](GUIA_CONFIGURACION_AWS.md)** - Guía paso a paso para configurar AWS y desplegar
+- **[ERRORES_ENCONTRADOS.md](ERRORES_ENCONTRADOS.md)** - Reporte detallado de errores encontrados y soluciones
 - **[EXPLICACION_PASO_A_PASO.md](EXPLICACION_PASO_A_PASO.md)** - Explicación técnica detallada del código (41 KB)
 - **[RESUMEN-PROYECTO-INDIVIDUAL.md](RESUMEN-PROYECTO-INDIVIDUAL.md)** - Guía para presentación y defensa (10.5 KB)
 
@@ -147,23 +147,25 @@ Monitoreo:
 ```
 INFRAESTRUCTURA DINEX/
 │
-├── README-INDIVIDUAL.md          # Este archivo
-├── EXPLICACION_PASO_A_PASO.md   # Explicación detallada para sustentación
-├── Makefile-simple               # Comandos automatizados
+├── README.md                        # Este archivo
+├── EXPLICACION_PASO_A_PASO.md      # Explicación detallada para sustentación
+├── Makefile                         # Comandos automatizados
 │
-├── terraform-simple/             # Infraestructura como Código
-│   ├── main.tf                   # Configuración principal (TODOS los recursos)
-│   ├── variables.tf              # Variables de entrada
-│   ├── outputs.tf                # Valores de salida
-│   └── terraform.tfvars          # Valores concretos
+├── infrastructure/
+│   └── terraform/                   # Infraestructura como Código
+│       ├── main.tf                  # Configuración principal (TODOS los recursos)
+│       ├── variables.tf             # Variables de entrada
+│       ├── outputs.tf               # Valores de salida
+│       └── terraform.tfvars         # Valores concretos
 │
-└── lambda-simple/                # Código de funciones Lambda
-    ├── tracking/                 # Lambda para tracking
-    │   ├── index.py              # Código Python (GET/POST)
-    │   └── requirements.txt      # Dependencias (vacío)
-    └── notifications/            # Lambda para notificaciones
-        ├── index.py              # Código Python
-        └── requirements.txt      # Dependencias (vacío)
+└── application/
+    └── lambda/                      # Código de funciones Lambda
+        ├── tracking/                # Lambda para tracking
+        │   ├── index.py             # Código Python (GET/POST)
+        │   └── deployment.zip       # Package desplegable
+        └── notifications/           # Lambda para notificaciones
+            ├── index.py             # Código Python
+            └── deployment.zip       # Package desplegable
 ```
 
 ---
@@ -203,7 +205,7 @@ aws configure
 make package
 
 # O manualmente:
-cd lambda-simple/tracking
+cd application/lambda/tracking
 zip -r deployment.zip index.py
 
 cd ../notifications
@@ -217,7 +219,7 @@ zip -r deployment.zip index.py
 make init
 
 # O manualmente:
-cd terraform-simple
+cd infrastructure/terraform
 terraform init
 ```
 
@@ -228,11 +230,11 @@ terraform init
 make plan
 
 # O manualmente:
-cd terraform-simple
+cd infrastructure/terraform
 terraform plan
 ```
 
-Deberías ver: **12 recursos a crear**
+Deberías ver: **18 recursos a crear**
 
 #### Paso 4: Aplicar
 
@@ -241,7 +243,7 @@ Deberías ver: **12 recursos a crear**
 make apply
 
 # O manualmente:
-cd terraform-simple
+cd infrastructure/terraform
 terraform apply
 ```
 
@@ -261,7 +263,7 @@ make test-api
 
 ```bash
 # 1. Obtener URL del API
-cd terraform-simple
+cd infrastructure/terraform
 export API_URL=$(terraform output -raw api_endpoint)
 
 # 2. Health Check
@@ -326,7 +328,7 @@ make cost           # Ver estimación de costos
 
 ```bash
 # Obtener URL del dashboard
-cd terraform-simple
+cd infrastructure/terraform
 terraform output dashboard_url
 
 # O acceder directamente:
@@ -431,12 +433,6 @@ aws budgets create-budget \
 
 ## Troubleshooting
 
-### Error: "Bucket already exists"
-
-Si ejecutas el bootstrap y obtienes este error, el nombre del bucket ya está tomado globalmente.
-
-**Solución:** No aplicable en este proyecto simple (no usa backend S3 remoto)
-
 ### Error: "Invalid provider configuration"
 
 **Problema:** AWS credentials no configuradas
@@ -468,7 +464,7 @@ make apply
 make destroy
 
 # O manualmente
-cd terraform-simple
+cd infrastructure/terraform
 terraform destroy
 ```
 
@@ -504,5 +500,3 @@ Aunque es un proyecto individual, implementa una solución funcional y escalable
 
 **Desarrollado como proyecto universitario**
 **Curso: Infraestructura como Código - 2025**
-
-¡Éxito en tu presentación! 🚀

@@ -190,8 +190,3 @@ unclassified:
 
   gitHubPluginConfig:
     hookUrl: "http://localhost:8080/github-webhook/"
-
-  prometheus:
-    defaultNamespace: "dinex_tracking"
-    path: "prometheus"
-    collectingMetricsPeriodInSeconds: 120

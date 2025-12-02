@@ -1,0 +1,22 @@
+{
+  "name": "dinex-tracking",
+  "version": "1.0.0",
+  "description": "Sistema de Tracking DINEX - Proyecto Individual IaC",
+  "main": "index.js",
+  "scripts": {
+    "sonar": "sonar-scanner",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "terraform",
+    "aws",
+    "lambda",
+    "infrastructure-as-code",
+    "serverless"
+  ],
+  "author": "[Tu Nombre]",
+  "license": "MIT",
+  "devDependencies": {
+    "sonarqube-scanner": "^3.3.0"
+  }
+}
